@@ -32,3 +32,11 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/cloudfoundry-incubator/credhub-cli"
+  version = "1.7.6"
+
+[[constraint]]
+  name = "github.com/qntfy/kazaam"
+  version = "3.4.5"
