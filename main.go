@@ -23,7 +23,12 @@ func main() {
 	subrouter.HandleFunc("/{path:.*}", GetSecret).Methods("GET")
 	subrouter.HandleFunc("/{path:.*}", SetSecret).Methods("POST")
 	subrouter.HandleFunc("/{path:.*}", DelSecret).Methods("DELETE")
-	log.Fatal(http.ListenAndServe(":8000", router))
+
+	addr := "127.0.0.1:8200"
+	if a := os.Getenv("ADDRESS"); a != "" {
+		addr = a
+	}
+	log.Fatal(http.ListenAndServeTLS(addr, os.Getenv("TLS_CERT_FILE"), os.Getenv("TLS_KEY_FILE"), router))
 }
 
 func ListSecret(w http.ResponseWriter, r *http.Request) {
