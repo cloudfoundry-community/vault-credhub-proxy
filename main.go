@@ -28,7 +28,13 @@ func main() {
 	if a := os.Getenv("ADDRESS"); a != "" {
 		addr = a
 	}
-	log.Fatal(http.ListenAndServeTLS(addr, os.Getenv("TLS_CERT_FILE"), os.Getenv("TLS_KEY_FILE"), router))
+	if os.Getenv("TLS_CERT_FILE") != "" {
+		log.Fatal(http.ListenAndServeTLS(addr,
+			os.Getenv("TLS_CERT_FILE"), os.Getenv("TLS_KEY_FILE"), router))
+	} else {
+		log.Fatal(http.ListenAndServe(addr, router))
+	}
+
 }
 
 func ListSecret(w http.ResponseWriter, r *http.Request) {
