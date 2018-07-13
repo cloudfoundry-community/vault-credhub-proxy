@@ -78,6 +78,8 @@ func GetSecret(w http.ResponseWriter, r *http.Request) {
 		k, _ = kazaam.New(`[{"operation": "shift", "spec": {"data.password": "value"}}]`, kazaam.NewDefaultConfig())
 	case "value":
 		k, _ = kazaam.New(`[{"operation": "shift", "spec": {"data.value": "value"}}]`, kazaam.NewDefaultConfig())
+	case "certificate":
+		k, _ = kazaam.New(`[{"operation": "shift", "spec": {"data.ca": "value.ca", "data.key": "value.private_key", "data.certificate": "value.certificate"}}]`, kazaam.NewDefaultConfig())
 	default:
 		k, _ = kazaam.New(`[{"operation": "shift", "spec": {"data": "value"}}]`, kazaam.NewDefaultConfig())
 	}
