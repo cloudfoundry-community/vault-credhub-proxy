@@ -10,7 +10,7 @@
 # created: 2016-03-30
 #
 
-set -eux
+set -eu
 
 : ${GIT_EMAIL:?required}
 : ${GIT_NAME:?required}
@@ -63,7 +63,7 @@ pushd $REPO_ROOT
 mkdir artifacts
 gox -osarch="${TARGETS}" --output="artifacts/${BINARY}-{{.OS}}-{{.Arch}}" -ldflags="-X main.Version=${VERSION}" ./...
 go build -o "${BINARY}" -ldflags="-X main.Version=${VERSION}" ${CMD_PKG:-.}
-./${BINARY} -v
+# ./${BINARY} -v
 popd
 
 echo "v${VERSION}"                         > ${RELEASE_ROOT}/tag
