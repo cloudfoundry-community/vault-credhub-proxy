@@ -34,8 +34,8 @@
   unused-packages = true
 
 [[constraint]]
-  name = "github.com/cloudfoundry-incubator/credhub-cli"
-  version = "1.7.6"
+  name = "code.cloudfoundry.org/credhub-cli"
+  version = "2.0.0"
 
 [[constraint]]
   name = "github.com/qntfy/kazaam"

@@ -9,9 +9,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/auth"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials/values"
+	"code.cloudfoundry.org/credhub-cli/credhub"
+	"code.cloudfoundry.org/credhub-cli/credhub/auth"
+	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
 	"github.com/gorilla/mux"
 	"github.com/qntfy/kazaam"
 )
@@ -104,7 +104,7 @@ func SetSecret(w http.ResponseWriter, r *http.Request) {
 	}
 	value := values.JSON{}
 	err = json.Unmarshal(body, &value)
-	cred, err := ch.SetJSON(path, value, credhub.Converge)
+	cred, err := ch.SetJSON(path, value)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error setting secret: %s", err),
 			http.StatusInternalServerError)
