@@ -19,6 +19,7 @@ import (
 func main() {
 	router := mux.NewRouter()
 	subrouter := router.PathPrefix("/v1").Subrouter()
+	subrouter.HandleFunc("/auth/approle/login", AppRoleLogin).Methods("POST")
 	subrouter.HandleFunc("/{path:.*}", ListSecret).Methods("GET").Queries("list", "1")
 	subrouter.HandleFunc("/{path:.*}", GetSecret).Methods("GET")
 	subrouter.HandleFunc("/{path:.*}", SetSecret).Methods("POST")
@@ -34,6 +35,19 @@ func main() {
 	} else {
 		log.Fatal(http.ListenAndServe(addr, router))
 	}
+
+}
+
+func AppRoleLogin(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading request body",
+			http.StatusInternalServerError)
+	}
+	k, _ := kazaam.New(`[{"operation": "shift", "spec": {"auth.client_token": "secret_id"}}]`, kazaam.NewDefaultConfig())
+	o, _ := k.TransformInPlace(body)
+	w.Write(o)
+	log.Print("app role login")
 
 }
 
