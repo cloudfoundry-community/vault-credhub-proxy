@@ -19,6 +19,8 @@ import (
 func main() {
 	router := mux.NewRouter()
 	subrouter := router.PathPrefix("/v1").Subrouter()
+	subrouter.HandleFunc("/sys/seal-status", SealStatus).Methods("GET")
+	subrouter.HandleFunc("/sys/leader", Leader).Methods("GET")
 	subrouter.HandleFunc("/auth/approle/login", AppRoleLogin).Methods("POST")
 	subrouter.HandleFunc("/{path:.*}", ListSecret).Methods("GET").Queries("list", "1")
 	subrouter.HandleFunc("/{path:.*}", GetSecret).Methods("GET")
@@ -36,6 +38,16 @@ func main() {
 		log.Fatal(http.ListenAndServe(addr, router))
 	}
 
+}
+
+func SealStatus(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(`{"sealed":false}`))
+	log.Print("seal status")
+}
+
+func Leader(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(`{"is_self":true}`))
+	log.Print("leader status")
 }
 
 func AppRoleLogin(w http.ResponseWriter, r *http.Request) {
