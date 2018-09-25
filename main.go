@@ -22,6 +22,7 @@ func main() {
 	subrouter.HandleFunc("/sys/seal-status", SealStatus).Methods("GET")
 	subrouter.HandleFunc("/sys/leader", Leader).Methods("GET")
 	subrouter.HandleFunc("/auth/approle/login", AppRoleLogin).Methods("POST")
+	subrouter.HandleFunc("/secret/handshake", SecretHandshake).Methods("GET")
 	subrouter.HandleFunc("/{path:.*}", ListSecret).Methods("GET").Queries("list", "1")
 	subrouter.HandleFunc("/{path:.*}", GetSecret).Methods("GET")
 	subrouter.HandleFunc("/{path:.*}", SetSecret).Methods("POST")
@@ -48,6 +49,14 @@ func SealStatus(w http.ResponseWriter, r *http.Request) {
 func Leader(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"is_self":true}`))
 	log.Print("leader status")
+}
+
+func SecretHandshake(w http.ResponseWriter, r *http.Request) {
+	// Genesis uses secret/handshake as a health check
+	// And is typically set during vault initialization (safe init)
+	// Credhub does not have an init process so just fake the handshake
+	w.Write([]byte(`{"value":{"knock":"knock"}}`))
+	log.Print("secret handshake")
 }
 
 func AppRoleLogin(w http.ResponseWriter, r *http.Request) {
