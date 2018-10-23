@@ -23,7 +23,7 @@ func main() {
 	subrouter.HandleFunc("/sys/leader", Leader).Methods("GET")
 	subrouter.HandleFunc("/auth/approle/login", AppRoleLogin).Methods("POST")
 	subrouter.HandleFunc("/secret/handshake", SecretHandshake).Methods("GET")
-	subrouter.HandleFunc("/{path:.*}", ListSecret).Methods("GET").Queries("list", "1")
+	subrouter.HandleFunc("/{path:.*}", ListSecret).Methods("LIST")
 	subrouter.HandleFunc("/{path:.*}", GetSecret).Methods("GET")
 	subrouter.HandleFunc("/{path:.*}", SetSecret).Methods("POST")
 	subrouter.HandleFunc("/{path:.*}", DelSecret).Methods("DELETE")
