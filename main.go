@@ -25,7 +25,7 @@ func main() {
 	subrouter.HandleFunc("/secret/handshake", SecretHandshake).Methods("GET")
 	subrouter.HandleFunc("/{path:.*}", ListSecret).Methods("LIST")
 	subrouter.HandleFunc("/{path:.*}", GetSecret).Methods("GET")
-	subrouter.HandleFunc("/{path:.*}", SetSecret).Methods("POST")
+	subrouter.HandleFunc("/{path:.*}", SetSecret).Methods("PUT")
 	subrouter.HandleFunc("/{path:.*}", DelSecret).Methods("DELETE")
 
 	addr := "127.0.0.1:8200"
@@ -62,7 +62,7 @@ func SecretHandshake(w http.ResponseWriter, r *http.Request) {
 func AppRoleLogin(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading request body",
+		http.Error(w, `{"errors":["Error: reading request body"]}`,
 			http.StatusInternalServerError)
 	}
 	k, _ := kazaam.New(`[{"operation": "shift", "spec": {"auth.client_token": "secret_id"}}]`, kazaam.NewDefaultConfig())
@@ -103,7 +103,7 @@ func GetSecret(w http.ResponseWriter, r *http.Request) {
 	path := mux.Vars(r)["path"]
 	cred, err := ch.GetLatestVersion(path)
 	if err != nil {
-		http.Error(w, "Not Found or Access Denied",
+		http.Error(w, `{"errors":[]}`,
 			http.StatusNotFound)
 	}
 	j, _ := json.Marshal(cred)
@@ -150,7 +150,6 @@ func SetSecret(w http.ResponseWriter, r *http.Request) {
 	o, _ := k.TransformInPlace(j)
 	w.Write(o)
 	log.Printf("set path %s", path)
-
 }
 
 func DelSecret(w http.ResponseWriter, r *http.Request) {
@@ -172,6 +171,7 @@ func getCredhubClient(tokenHeader string) (*credhub.CredHub, error) {
 	token := strings.Split(tokenHeader, ":")
 	caCert, err := ioutil.ReadFile(os.Getenv("CREDHUB_CA_CERT"))
 	if err != nil {
+		log.Printf("debug: %s", caCert)
 		return nil, err
 	}
 
