@@ -171,7 +171,6 @@ func getCredhubClient(tokenHeader string) (*credhub.CredHub, error) {
 	token := strings.Split(tokenHeader, ":")
 	caCert, err := ioutil.ReadFile(os.Getenv("CREDHUB_CA_CERT"))
 	if err != nil {
-		log.Printf("debug: %s", caCert)
 		return nil, err
 	}
 
