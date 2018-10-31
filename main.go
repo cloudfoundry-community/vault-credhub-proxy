@@ -89,6 +89,10 @@ func ListSecret(w http.ResponseWriter, r *http.Request) {
 	o, _ := k.TransformInPlace(j)
 	k, _ = kazaam.New(`[{"operation": "shift", "spec": {"data.keys": "data[*].name"}}]`, kazaam.NewDefaultConfig())
 	o, _ = k.TransformInPlace(o)
+	if string(o) == `{"data":{"keys":[]}}` {
+		http.Error(w, `{"errors":[]}`,
+			http.StatusNotFound)
+	}
 	w.Write(o)
 	log.Printf("list path %s", path)
 
