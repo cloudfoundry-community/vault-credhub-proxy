@@ -2,11 +2,11 @@ package auth
 
 import (
 	"bytes"
-	"strings"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -149,7 +149,7 @@ func (a *OAuthStrategy) requestToken() error {
 	}
 
 	if err != nil {
-		return err
+		return errors.New("Your token has expired and could not be refreshed. Please log in again to continue.")
 	}
 
 	a.SetTokens(accessToken, refreshToken)
