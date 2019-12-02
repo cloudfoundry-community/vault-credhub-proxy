@@ -19,6 +19,8 @@ import (
 func main() {
 	router := mux.NewRouter()
 	subrouter := router.PathPrefix("/v1").Subrouter()
+	subrouter.HandleFunc("/sys/internal/ui/mounts", Mounts).Methods("GET")
+	subrouter.HandleFunc("/sys/mounts", Mounts).Methods("GET")
 	subrouter.HandleFunc("/sys/seal-status", SealStatus).Methods("GET")
 	subrouter.HandleFunc("/sys/leader", Leader).Methods("GET")
 	subrouter.HandleFunc("/auth/approle/login", AppRoleLogin).Methods("POST")
@@ -39,6 +41,11 @@ func main() {
 		log.Fatal(http.ListenAndServe(addr, router))
 	}
 
+}
+
+func Mounts(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(`{"secret":{"type":"kv"}}`))
+	log.Print("mounts")
 }
 
 func SealStatus(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +76,6 @@ func AppRoleLogin(w http.ResponseWriter, r *http.Request) {
 	o, _ := k.TransformInPlace(body)
 	w.Write(o)
 	log.Print("app role login")
-
 }
 
 func ListSecret(w http.ResponseWriter, r *http.Request) {
