@@ -99,7 +99,17 @@ func ListSecret(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"errors":[]}`,
 			http.StatusNotFound)
 	}
-	w.Write(o)
+	var tmp struct {
+		Data struct {
+			Keys []string
+		}
+	}
+	json.Unmarshal(o, &tmp)
+	for i, key := range tmp.Data.Keys {
+		tmp.Data.Keys[i] = strings.TrimPrefix(key, fmt.Sprintf("/%s", path))
+	}
+	out, _ := json.Marshal(tmp)
+	w.Write(out)
 	log.Printf("list path %s", path)
 
 }
