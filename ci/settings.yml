@@ -1,19 +1,19 @@
 ---
 meta:
   name: vault-credhub-proxy
-  target: ci2
-  url:     https://ci2.starkandwayne.com
+  target: pipes@main
+  url:     https://pipes.starkandwayne.com
   git:
     name: "CI Bot"
     email: "ci@starkandwayne.com"
   github:
     owner: starkandwayne
     repo:  vault-credhub-proxy
-    private_key:  ((github_private_key))
-    access_token: ((github_acces_token))
+    private_key:  ((github.private-key))
+    access_token: ((github.access-token))
   aws:
-    access_key: ((aws_access_key))
-    secret_key: ((aws_secret_key))
+    access_key: ((cfcommunity.access))
+    secret_key: ((cfcommunity.secret))
   slack:
-    webhook: ((slack_webhook))
+    webhook: ((webhook))
     channel: "#nochannel"
