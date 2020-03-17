@@ -13,7 +13,7 @@ go run main.go
 Make sure to [install the safe cli](https://github.com/starkandwayne/safe)
 
 ```
-safe target http://127.0.0.1:8200 dev
+safe target http://127.0.0.1:8200 dev --no-strongbox
 echo "${CREDHUB_CLIENT}:${CREDHUB_SECRET}" | safe auth token
 safe tree /
 ```

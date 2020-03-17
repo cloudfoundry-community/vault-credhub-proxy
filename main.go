@@ -22,6 +22,7 @@ func main() {
 	subrouter.HandleFunc("/sys/internal/ui/mounts", Mounts).Methods("GET")
 	subrouter.HandleFunc("/sys/mounts", Mounts).Methods("GET")
 	subrouter.HandleFunc("/sys/seal-status", SealStatus).Methods("GET")
+	subrouter.HandleFunc("/sys/health", SealStatus).Methods("GET")
 	subrouter.HandleFunc("/sys/leader", Leader).Methods("GET")
 	subrouter.HandleFunc("/auth/approle/login", AppRoleLogin).Methods("POST")
 	subrouter.HandleFunc("/secret/handshake", SecretHandshake).Methods("GET")
