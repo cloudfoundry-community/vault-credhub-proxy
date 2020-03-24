@@ -63,7 +63,7 @@ func SecretHandshake(w http.ResponseWriter, r *http.Request) {
 	// Genesis uses secret/handshake as a health check
 	// And is typically set during vault initialization (safe init)
 	// Credhub does not have an init process so just fake the handshake
-	w.Write([]byte(`{"value":{"knock":"knock"}}`))
+	w.Write([]byte(`{"data":{"knock":"knock"}}`))
 	log.Print("secret handshake")
 }
 
