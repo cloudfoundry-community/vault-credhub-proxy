@@ -16,6 +16,12 @@ import (
 	"github.com/qntfy/kazaam"
 )
 
+type tmpMount struct {
+	Type        string   `json:"type"`
+	Description string   `json:"description"`
+	Config      struct{} `json:"config"`
+}
+
 func main() {
 	router := mux.NewRouter()
 	subrouter := router.PathPrefix("/v1").Subrouter()
@@ -41,12 +47,38 @@ func main() {
 	} else {
 		log.Fatal(http.ListenAndServe(addr, router))
 	}
-
 }
 
 func Mounts(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(`{"secret":{"type":"kv"}}`))
 	log.Print("mounts")
+	ch, err := getCredhubClient(r.Header.Get("X-Vault-Token"))
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"errors":["Error connecting to credhub: %s"]}`, err.Error()),
+			http.StatusInternalServerError)
+		log.Printf("Error connecting to Credhub: %s", err)
+		return
+	}
+
+	path := mux.Vars(r)["path"]
+	results, err := ch.FindByPath(path)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"errors":["Error connecting to credhub: %s"]}`, err.Error()),
+			http.StatusInternalServerError)
+		log.Printf("error returned by credhub FindByPath %s", err)
+		return
+	}
+
+	mounts := make(map[string]tmpMount)
+	for _, key := range results.Credentials {
+		mountName := strings.Split(strings.TrimPrefix(key.Name, fmt.Sprintf("/%s", path)), "/")[0]
+		mounts[mountName] = tmpMount{
+			Type:        "kv",
+			Description: "A vault proxy backend",
+		}
+	}
+	out, _ := json.Marshal(mounts)
+	w.Write(out)
+	log.Printf("list path %s", path)
 }
 
 func SealStatus(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +95,46 @@ func SecretHandshake(w http.ResponseWriter, r *http.Request) {
 	// Genesis uses secret/handshake as a health check
 	// And is typically set during vault initialization (safe init)
 	// Credhub does not have an init process so just fake the handshake
-	w.Write([]byte(`{"data":{"knock":"knock"}}`))
+	ch, err := getCredhubClient(r.Header.Get("X-Vault-Token"))
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"errors":["Error connecting to credhub: %s"]}`, err.Error()),
+			http.StatusInternalServerError)
+		log.Printf("Error connecting to Credhub: %s", err)
+		return
+	}
+
+	cred, err := ch.GetLatestVersion("secret/handshake")
+	if err != nil {
+		log.Printf("ERROR: %s", err.Error())
+		value := values.JSON{}
+		err = json.Unmarshal([]byte(`{"knock":"knock"}`), &value)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error setting secret: %s", err),
+				http.StatusInternalServerError)
+		}
+		_, err := ch.SetJSON("secret/handshake", value)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error setting secret: %s", err),
+				http.StatusInternalServerError)
+		}
+		w.Write([]byte(`{"data":{"knock":"knock"}}`))
+		return
+	}
+	j, _ := json.Marshal(cred)
+	var k *kazaam.Kazaam
+	switch cred.Metadata.Type {
+	case "password":
+		k, _ = kazaam.New(`[{"operation": "shift", "spec": {"data.password": "value"}}]`, kazaam.NewDefaultConfig())
+	case "value":
+		k, _ = kazaam.New(`[{"operation": "shift", "spec": {"data.value": "value"}}]`, kazaam.NewDefaultConfig())
+	case "certificate":
+		k, _ = kazaam.New(`[{"operation": "shift", "spec": {"data.ca": "value.ca", "data.key": "value.private_key", "data.certificate": "value.certificate"}}]`, kazaam.NewDefaultConfig())
+	default:
+		k, _ = kazaam.New(`[{"operation": "shift", "spec": {"data": "value"}}]`, kazaam.NewDefaultConfig())
+	}
+	o, _ := k.TransformInPlace(j)
+	w.Write(o)
+
 	log.Print("secret handshake")
 }
 
@@ -72,6 +143,7 @@ func AppRoleLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, `{"errors":["Error: reading request body"]}`,
 			http.StatusInternalServerError)
+		return
 	}
 	k, _ := kazaam.New(`[{"operation": "shift", "spec": {"auth.client_token": "secret_id"}}]`, kazaam.NewDefaultConfig())
 	o, _ := k.TransformInPlace(body)
@@ -82,13 +154,19 @@ func AppRoleLogin(w http.ResponseWriter, r *http.Request) {
 func ListSecret(w http.ResponseWriter, r *http.Request) {
 	ch, err := getCredhubClient(r.Header.Get("X-Vault-Token"))
 	if err != nil {
-		log.Fatal("Error connection to Credhub: ", err)
+		http.Error(w, fmt.Sprintf(`{"errors":["Error connecting to credhub: %s"]}`, err.Error()),
+			http.StatusInternalServerError)
+		log.Printf("Error connecting to Credhub: %s", err)
+		return
 	}
 
 	path := mux.Vars(r)["path"]
 	results, err := ch.FindByPath(path)
 	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"errors":["Error connecting to credhub: %s"]}`, err.Error()),
+			http.StatusInternalServerError)
 		log.Printf("error returned by credhub FindByPath %s", err)
+		return
 	}
 
 	j, _ := json.Marshal(results.Credentials)
@@ -107,7 +185,11 @@ func ListSecret(w http.ResponseWriter, r *http.Request) {
 	}
 	json.Unmarshal(o, &tmp)
 	for i, key := range tmp.Data.Keys {
-		tmp.Data.Keys[i] = strings.TrimPrefix(key, fmt.Sprintf("/%s", path))
+		relativeKey := strings.Split(strings.TrimPrefix(key, fmt.Sprintf("/%s", path)), "/")[1]
+		if len(strings.Split(strings.TrimPrefix(key, fmt.Sprintf("/%s", path)), "/")) != 2 {
+			relativeKey = relativeKey + "/"
+		}
+		tmp.Data.Keys[i] = relativeKey
 	}
 	out, _ := json.Marshal(tmp)
 	w.Write(out)
@@ -118,7 +200,10 @@ func ListSecret(w http.ResponseWriter, r *http.Request) {
 func GetSecret(w http.ResponseWriter, r *http.Request) {
 	ch, err := getCredhubClient(r.Header.Get("X-Vault-Token"))
 	if err != nil {
-		log.Fatal("Error connection to Credhub: ", err)
+		http.Error(w, fmt.Sprintf(`{"errors":["Error talking to credhub: %s"]}`, err.Error()),
+			http.StatusInternalServerError)
+		log.Printf("Error connecting to Credhub: %s", err)
+		return
 	}
 
 	path := mux.Vars(r)["path"]
@@ -149,7 +234,10 @@ func GetSecret(w http.ResponseWriter, r *http.Request) {
 func SetSecret(w http.ResponseWriter, r *http.Request) {
 	ch, err := getCredhubClient(r.Header.Get("X-Vault-Token"))
 	if err != nil {
-		log.Fatal("Error connection to Credhub: ", err)
+		http.Error(w, fmt.Sprintf(`{"errors":["Error talking to credhub: %s"]}`, err.Error()),
+			http.StatusInternalServerError)
+		log.Printf("Error connecting to Credhub: %s", err)
+		return
 	}
 
 	path := mux.Vars(r)["path"]
@@ -176,7 +264,10 @@ func SetSecret(w http.ResponseWriter, r *http.Request) {
 func DelSecret(w http.ResponseWriter, r *http.Request) {
 	ch, err := getCredhubClient(r.Header.Get("X-Vault-Token"))
 	if err != nil {
-		log.Fatal("Error connection to Credhub: ", err)
+		http.Error(w, fmt.Sprintf(`{"errors":["Error talking to credhub: %s"]}`, err.Error()),
+			http.StatusInternalServerError)
+		log.Printf("Error connecting to Credhub: %s", err)
+		return
 	}
 
 	path := mux.Vars(r)["path"]
