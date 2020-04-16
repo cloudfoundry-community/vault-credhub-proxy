@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 
 	"code.cloudfoundry.org/credhub-cli/credhub"
@@ -183,14 +184,24 @@ func ListSecret(w http.ResponseWriter, r *http.Request) {
 			Keys []string
 		}
 	}
+
+	keymap := map[string]bool{}
+
 	json.Unmarshal(o, &tmp)
-	for i, key := range tmp.Data.Keys {
+	for _, key := range tmp.Data.Keys {
 		relativeKey := strings.Split(strings.TrimPrefix(key, fmt.Sprintf("/%s", path)), "/")[1]
 		if len(strings.Split(strings.TrimPrefix(key, fmt.Sprintf("/%s", path)), "/")) != 2 {
 			relativeKey = relativeKey + "/"
 		}
-		tmp.Data.Keys[i] = relativeKey
+		keymap[relativeKey] = true
 	}
+
+	tmp.Data.Keys = []string{}
+	for key := range keymap {
+		tmp.Data.Keys = append(tmp.Data.Keys, key)
+	}
+
+	sort.Strings(tmp.Data.Keys)
 	out, _ := json.Marshal(tmp)
 	w.Write(out)
 	log.Printf("list path %s", path)
