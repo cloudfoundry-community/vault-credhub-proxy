@@ -1,19 +1,24 @@
 ---
 meta:
-  name: vault-credhub-proxy
-  target: pipes@main
-  url:     https://pipes.starkandwayne.com
+  name:    vault-credhub-proxy
+  target:  pipes/cloudfoundry-community
+  url:     https://pipes.scalecf.net
+
   git:
-    name: "CI Bot"
-    email: "ci@starkandwayne.com"
+    name:  Cloudfoundry Community CI Bot
+    email: ci@loudfoundry-community.org
+
   github:
-    owner: starkandwayne
+    owner: cloudfoundry-community
     repo:  vault-credhub-proxy
-    private_key:  ((github.private-key))
-    access_token: ((github.access-token))
+    branch: develop
+    private_key:  ((github.private_key))
+    access_token: ((github.access_token))
+
   aws:
-    access_key: ((cfcommunity.access))
-    secret_key: ((cfcommunity.secret))
+    access_key: ((aws.access_key_id))
+    secret_key: ((aws.secret_access_key))
+
   slack:
-    webhook: ((webhook))
+    webhook: ((slack.webhook))
     channel: "#nochannel"
