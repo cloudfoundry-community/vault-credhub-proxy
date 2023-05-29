@@ -63,10 +63,14 @@ groups:
 - name: (( grab meta.pipeline ))
   jobs:
     - test
-    - test-pr
     - pre
     - rc
     - shipit
+- name: (( concat meta.pipeline "-pull-requests" ))
+  jobs:
+    - test-pr
+- name: 'versioning'
+  jobs:
     - major
     - minor
     - bump-patch
@@ -105,10 +109,12 @@ jobs:
   public: true
   serial: true
   plan:
-  - { get: git-pull-requests, trigger: true, version: every }
-  - put: git-pull-requests
+  - get: pull-request
+    trigger: true
+    version: every
+  - put: pull-request
     params:
-      path: git-pull-requests
+      path: pull-request
       status: pending
   - task: test
     config:
@@ -119,7 +125,7 @@ jobs:
           repository: (( grab meta.image.name ))
           tag:        (( grab meta.image.tag ))
       inputs:
-        - name: git-pull-requests
+        - name: pull-request
           path: (( concat "gopath/src/" meta.go.module ))
       run:
         path: (( concat "./gopath/src/" meta.go.module "/ci/scripts/test" ))
@@ -127,14 +133,14 @@ jobs:
       params:
         MODULE: (( grab meta.go.module ))
     on_success:
-      put: git-pull-requests
+      put: pull-request
       params:
-        path: git-pull-requests
+        path: pull-request
         status: success
     on_failure:
-      put: git-pull-requests
+      put: pull-request
       params:
-        path: git-pull-requests
+        path: pull-request
         status: failure
   - task: pr-success-message
     config:
@@ -145,7 +151,7 @@ jobs:
           repository: (( grab meta.image.name ))
           tag:        (( grab meta.image.tag ))
       inputs:
-        - { name: git-pull-requests }
+        - { name: pull-request }
       outputs:
         - { name: message }
       run:
@@ -153,7 +159,7 @@ jobs:
         args:
         - -ce
         - |
-          cd git-pull-requests
+          cd pull-request
           pr_url=$(git config --get pullrequest.url)
           cd -
           echo "<${pr_url}|Pull request passed test> Merge when ready: ${pr_url}" > message/body
@@ -340,9 +346,9 @@ resource_types:
     repository: cfcommunity/slack-notification-resource
 
 - name: pull-request
-  type: docker-image
+  type: registry-image
   source:
-    repository: jtarchie/pr
+    repository: teliaoss/github-pr-resource
 
 resources:
 - name: git
@@ -375,10 +381,10 @@ resources:
     repository:   (( grab meta.github.repo ))
     access_token: (( grab meta.github.access_token ))
 
-- name: git-pull-requests
+- name: pull-request
   type: pull-request
+  check_every: 24h
   source:
     access_token: (( grab meta.github.access_token ))
-    private_key:  (( grab meta.github.private_key ))
-    repo:         (( concat meta.github.owner "/" meta.github.repo ))
-    base:         (( grab meta.github.branch ))
+    repository:   (( concat meta.github.owner "/" meta.github.repo ))
+    base_branch:  (( grab meta.github.branch ))
