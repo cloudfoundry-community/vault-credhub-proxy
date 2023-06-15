@@ -2,10 +2,11 @@
 set -eu
 
 # Resource Directories
-export REPO_ROOT="git"
-export BUILD_ROOT="build"
-export CI_ROOT="git-ci"
+export REPO_ROOT="$(pwd)/git"
+export BUILD_ROOT="$(pwd)/build"
+export CI_ROOT="$(pwd)/git-ci"
 export VERSION_FROM="version/number"
+export RELEASE_ROOT="${REPO_ROOT}/builds"
 
 header() {
 	echo
@@ -29,9 +30,9 @@ header "Building $APP_NAME v$VERSION..."
 
 cd "$REPO_ROOT"
 go version; echo; echo
-make clean release-all VERSION=$VERSION APP_NAME=$APP_NAME
-cd release
-tar -zcvf ../../$BUILD_ROOT/$APP_NAME-$VERSION.tar.gz $APP_NAME-$VERSION-*
+make clean release-all VERSION="$VERSION" APP_NAME="$APP_NAME" RELEASE_ROOT="${RELEASE_ROOT}"
+cd "$RELEASE_ROOT"
+tar -zcvf "../../$BUILD_ROOT/$APP_NAME-$VERSION.tar.gz" "$APP_NAME-$VERSION-"*
 
 echo
 echo "================================================================================"
