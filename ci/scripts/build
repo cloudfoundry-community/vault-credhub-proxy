@@ -32,7 +32,7 @@ cd "$REPO_ROOT"
 go version; echo; echo
 make clean release-all VERSION="$VERSION" APP_NAME="$APP_NAME" RELEASE_ROOT="${RELEASE_ROOT}"
 cd "$RELEASE_ROOT"
-tar -zcvf "../../$BUILD_ROOT/$APP_NAME-$VERSION.tar.gz" "$APP_NAME-$VERSION-"*
+tar -zcvf "$BUILD_ROOT/$APP_NAME-$VERSION.tar.gz" "$APP_NAME-$VERSION-"*
 
 echo
 echo "================================================================================"
