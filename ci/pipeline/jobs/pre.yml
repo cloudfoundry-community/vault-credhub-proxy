@@ -1,0 +1,49 @@
+jobs:
+- name: pre
+  public: true
+  serial: true
+  plan:
+  - get: git
+    passed:
+    - test
+    trigger: true
+  - get: version
+    trigger: true
+  - task: release-notes
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: registry.ops.scalecf.net/genesis-community/concourse
+          tag: latest
+      run:
+        path: sh
+        args:
+        - -ce
+        - |
+          cd git
+          if [ -f ci/release_notes.md ]; then
+            echo "######   RELEASE NOTES   ###############"
+            echo
+            cat ci/release_notes.md
+            echo
+            echo "########################################"
+            echo
+          else
+            echo "NO RELEASE NOTES HAVE BEEN WRITTEN"
+            echo "You *might* want to do that before"
+            echo "hitting (+) on that shipit job..."
+            echo
+          fi
+      inputs:
+      - name: git
+  # on_failure:
+  #   put: notify
+  #   params:
+  #     channel:  (( grab meta.slack.channel ))
+  #     username: (( grab meta.slack.username ))
+  #     icon_url: (( grab meta.slack.icon ))
+  #     message: release candidate job 'pre' failed (which is unusual).
+  #     ok: false
+

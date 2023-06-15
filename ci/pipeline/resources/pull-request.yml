@@ -1,0 +1,14 @@
+resource_types:
+- name: pull-request
+  type: registry-image
+  source:
+    repository: teliaoss/github-pr-resource
+
+resources:
+- name: pull-request
+  type: pull-request
+  check_every: 24h
+  source:
+    access_token: (( grab meta.github.access_token ))
+    repository:   (( concat meta.github.owner "/" meta.github.repo ))
+    base_branch:  (( grab meta.github.branch ))
