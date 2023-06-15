@@ -1,30 +1,26 @@
 jobs:
-- name: test
-  public: true
-  serial: true
-  plan:
-  - { get: git, trigger: true }
-  - task: test
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: (( grab meta.image.name ))
-          tag:        (( grab meta.image.tag ))
-      inputs:
-        - name: git
-          path: (( concat "gopath/src/" meta.go.module ))
-      run:
-        path: (( concat "./gopath/src/" meta.go.module "/ci/scripts/test" ))
-        args: []
+  - name: test
+    public: true
+    serial: false
+    plan:
+    - in_parallel: 
+        steps: 
+        - { get: build,   passed: [build], trigger: true, params: {unpack: true}}
+        - { get: version, passed: [build]}
+        - { get: git,     passed: [build]}
+        - { get: git-ci}
+    - load_var: vault_version
+      file: github-vault-1.10/version
+      format: trim
+      reveal: true
+    - task: test
+      file: git-ci/ci/tasks/test.yml
       params:
-        MODULE: (( grab meta.go.module ))
-  # on_failure:
-  #   put: notify
-  #   params:
-  #     channel:  (( grab meta.slack.channel ))
-  #     username: (( grab meta.slack.username ))
-  #     icon_url: (( grab meta.slack.icon ))
-  #     text:    '(( concat meta.slack.fail_url " " meta.pipeline ": test job failed" ))'
+        APP_NAME: (( grab meta.name ))
+    on_failure:
+      put: notify
+      params:
+        username: (( grab meta.slack.username ))
+        icon_url: (( grab meta.slack.icon ))
+        text:    '(( concat meta.slack.fail_url " " meta.pipeline ": test job failed" ))'
 

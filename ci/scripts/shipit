@@ -38,7 +38,7 @@ fi
 
 go version; echo; echo
 #?#ORIGIN=$(pwd)
-TARGETS=${TARGETS:-linux/amd64 darwin/amd64}
+TARGETS=${TARGETS:-linux/amd64 darwin/amd64 windows/amd64}
 ROOT=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )
 
 pushd $REPO_ROOT
@@ -61,13 +61,9 @@ fi
 
 pushd $REPO_ROOT
 mkdir artifacts
-for target in $TARGETS; do
-  OS="${target%/*}"
-  ARCH="${target#*/}"
-  GOOS="$OS" GOARCH="$ARCH" go build --output="artifacts/${BINARY}-$OS-$ARCH" -ldflags="-X main.Version=${VERSION}" ./...
-  go build -o "${BINARY}" -ldflags="-X main.Version=${VERSION}"
-  ./${BINARY} -v
-done
+gox -osarch="${TARGETS}" --output="artifacts/${BINARY}-{{.OS}}-{{.Arch}}" -ldflags="-X main.Version=${VERSION}" ./...
+go build -o "${BINARY}" -ldflags="-X main.Version=${VERSION}" ${CMD_PKG:-.}
+./${BINARY} -v
 popd
 
 echo "v${VERSION}"                         > ${RELEASE_ROOT}/tag

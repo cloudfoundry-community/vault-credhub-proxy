@@ -8,8 +8,26 @@
 # ci/settings.yml and override what needs overridden.
 # This uses spruce, so you have some options there.
 #
-# author:  James Hunt <james@niftylogic.com>
-# created: 2016-03-30
+# author:  Dennis Bell  <dbell@fivetwenty.io>
+#          Wayne Seguin <wayneeseguin@fivetwenty.io>
+# created: 2023-05-30
+
+groups:
+  - name: (( concat "build-" meta.pipeline "-releases" ))
+    jobs:
+      - build
+      - ship-prerelease
+      - test
+      - prepare
+      - ship-release
+  - name: (( concat "test-" meta.pipeline "-pull-requests" ))
+    jobs:
+      - test-pr
+  - name: version
+    jobs:
+      - major
+      - minor
+      - patch
 
 meta:
   name:     (( param "Please name your pipeline" ))
@@ -28,11 +46,11 @@ meta:
     force_static_binary: false
 
   image:
-    name: registry.ops.scalecf.net/genesis-community/concourse-go
+    name: genesiscommunity/concourse-go
     tag:  latest
 
   aws:
-    bucket:      (( concat meta.pipeline "-pipeline" ))
+    bucket:     (( concat meta.pipeline "-pipeline" ))
     region_name: us-east-1
     access_key: (( param "Please set your AWS Access Key ID" ))
     secret_key: (( param "Please set your AWS Secret Key ID" ))
@@ -44,13 +62,18 @@ meta:
     branch:       develop
     private_key:  (( param "Please generate an SSH Deployment Key for this repo and specify it here" ))
     access_token: (( param "Please generate a Personal Access Token and specify it here" ))
+    release_notes:
+      repo:       "ci-release-notes"
+      branch:     "main"
+      file:       (( concat meta.name "-release-notes.md" ))
+      uri:        (( concat "git@github.com:"  meta.github.owner "/" meta.github.release_notes.repo ))
+      edit:       (( concat "https://github.com/" meta.github.owner "/"  meta.github.release_notes.repo "/edit/"  meta.github.release_notes.branch "/" meta.github.release_notes.file ))
 
   slack:
     webhook:       (( param "Please specify your Slack Incoming Webhook Integration URL" ))
-    username:      concourse
-    icon:          https://cl.ly/2F421Y300u07/concourse-logo-blue-transparent.png
     notification: '(( concat ":sadpanda: " meta.pipeline " build failed!<br>URL-GOES-HERE" ))'
-    channel:       (( param "Please specify the channel (#name) or user (@user) to send messages to" ))
+    username:      concourse
+    icon:          http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
     fail_moji:     ":airplane_arriving:"
     success_moji:  ":airplane_departure:"
     upset_moji:    ":sad_panda:"
@@ -58,18 +81,3 @@ meta:
 
   url: (( param "What is the URL for the Concourse instance this pipeline is located on?" ))
 
-groups:
-- name: (( grab meta.pipeline ))
-  jobs:
-    - test
-    - pre
-    - rc
-    - shipit
-- name: (( concat meta.pipeline "-pull-requests" ))
-  jobs:
-    - test-pr
-- name: 'versioning'
-  jobs:
-    - major
-    - minor
-    - bump-patch
