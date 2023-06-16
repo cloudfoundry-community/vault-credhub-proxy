@@ -4,11 +4,10 @@ RELEASE_ROOT   ?=builds
 TARGETS        ?=linux/amd64 linux/arm64 darwin/amd64 darwin/arm64
 APP_PATH       ?=./$(APP_NAME)
 TEST_PATH      ?=./ci/script/tests
-VAULT_VERSIONS ?=
 
 GO_LDFLAGS := -ldflags="-X main.Version=$(VERSION)"
 
-.PHONY: use build test install require-% release-% clean
+.PHONY: use build test testbuild install require-% release-% clean
 use:
 	@echo "Using $(shell $(APP_PATH) -v 2>&1) at location $(APP_PATH)"
 
@@ -17,10 +16,13 @@ vet:
 
 build: vet
 	go build $(GO_LDFLAGS) -o $(APP_PATH)
-	$(APP_PATH) -v
+	#$(APP_PATH) -v
 
-test: $(if $(wildcard $(APP_PATH)),use,build)
-	$(TEST_PATH) $(APP_PATH) ${VAULT_VERSIONS}
+test:
+	go test -v ./...
+
+testbuild: $(if $(wildcard $(APP_PATH)),use,build)
+	$(TEST_PATH) $(APP_PATH)
 
 install: build
 	mkdir -p $(DESTDIR)/bin

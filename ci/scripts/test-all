@@ -39,6 +39,8 @@ make test \
   TEST_PATH="../$CI_ROOT/ci/scripts/tests" \
   APP_PATH="../$BUILD_ROOT/$APP_NAME-$VERSION-$OS-$ARCH"
 
+#TODO: Build a credhub setup, connect using the app in ../build/, validate
+#      function
 echo
 echo "================================================================================"
 echo "SUCCESS!"
