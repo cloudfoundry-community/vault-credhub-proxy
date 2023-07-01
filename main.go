@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -292,6 +293,11 @@ func DelSecret(w http.ResponseWriter, r *http.Request) {
 
 func getCredhubClient(tokenHeader string) (*credhub.CredHub, error) {
 	token := strings.Split(tokenHeader, ":")
+
+	if len(token) < 2 || len(token[0]) == 0 || len(token[1]) == 0 {
+		return nil, errors.New("Invalid Request Header 'X-Vault-Token', required format: \"${CREDHUB_CLIENT}:${CREDHUB_SECRET}\", where the value of CREDHUB_CLIENT is the admin user.")
+	}
+
 	caCert, err := ioutil.ReadFile(os.Getenv("CREDHUB_CA_CERT"))
 	if err != nil {
 		return nil, err
