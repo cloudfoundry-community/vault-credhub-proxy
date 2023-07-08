@@ -18,10 +18,11 @@ import (
 	"github.com/qntfy/kazaam"
 )
 
-type tmpMount struct {
+type fakeMount struct {
 	Type        string   `json:"type"`
 	Description string   `json:"description"`
 	Config      struct{} `json:"config"`
+	Options     struct{} `json:"options"`
 }
 
 func main() {
@@ -61,7 +62,7 @@ func Mounts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	path := mux.Vars(r)["path"]
+	path := "";
 	results, err := ch.FindByPath(path)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"errors":["Error connecting to credhub: %s"]}`, err.Error()),
@@ -70,17 +71,17 @@ func Mounts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mounts := make(map[string]tmpMount)
+	mounts := make(map[string]fakeMount)
 	for _, key := range results.Credentials {
 		mountName := strings.Split(strings.TrimPrefix(key.Name, fmt.Sprintf("/%s", path)), "/")[0]
-		mounts[mountName] = tmpMount{
+		mounts[mountName] = fakeMount{
 			Type:        "kv",
 			Description: "A vault proxy backend",
 		}
 	}
 	out, _ := json.Marshal(mounts)
 	w.Write(out)
-	log.Printf("list path %s", path)
+	log.Printf("mounts found: %s", out)
 }
 
 func SealStatus(w http.ResponseWriter, r *http.Request) {
@@ -218,6 +219,12 @@ func GetSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	list := r.URL.Query().Get("list")
+	if (list == "true") {
+		ListSecret(w,r)
+		return
+	}
+
 	path := mux.Vars(r)["path"]
 	cred, err := ch.GetLatestVersion(path)
 	if err != nil {
@@ -260,6 +267,10 @@ func SetSecret(w http.ResponseWriter, r *http.Request) {
 	}
 	value := values.JSON{}
 	err = json.Unmarshal(body, &value)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error unmarshalling json secret: %s", err),
+			http.StatusInternalServerError)
+	}
 	cred, err := ch.SetJSON(path, value)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error setting secret: %s", err),
