@@ -27,6 +27,7 @@ type fakeMount struct {
 
 func main() {
 	router := mux.NewRouter()
+	router.Use(requestLogger)
 	subrouter := router.PathPrefix("/v1").Subrouter()
 	subrouter.HandleFunc("/sys/internal/ui/mounts", Mounts).Methods("GET")
 	subrouter.HandleFunc("/sys/mounts", Mounts).Methods("GET")
@@ -50,6 +51,36 @@ func main() {
 	} else {
 		log.Fatal(http.ListenAndServe(addr, router))
 	}
+}
+
+func requestLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Create a struct to hold the data
+		reqData := struct {
+			Method string
+			URL    string
+			Header http.Header
+		}{
+			Method: r.Method,
+			URL:    r.URL.String(),
+			Header: r.Header,
+		}
+
+		// Serialize to JSON
+		jsonData, err := json.Marshal(reqData)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error marshalling request data: %v", err)
+			// Even if we couldn't marshal the data, we still want to handle the request
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Print to stdout
+		fmt.Println(string(jsonData))
+
+		// Handle the request
+		next.ServeHTTP(w, r)
+	})
 }
 
 func Mounts(w http.ResponseWriter, r *http.Request) {
