@@ -432,7 +432,7 @@ func getCredhubClient(tokenHeader string) (*credhub.CredHub, error) {
 	token := strings.Split(tokenHeader, ":")
 
 	if len(token) < 2 || len(token[0]) == 0 || len(token[1]) == 0 {
-		return nil, errors.New("Invalid Request Header 'X-Vault-Token', required format: \"${CREDHUB_CLIENT}:${CREDHUB_SECRET}\", where the value of CREDHUB_CLIENT is the admin user.")
+		return nil, errors.New("invalid Request Header 'X-Vault-Token', required format: '${CREDHUB_CLIENT}:${CREDHUB_SECRET}', where the value of CREDHUB_CLIENT is the admin user")
 	}
 
 	caCert, err := ioutil.ReadFile(os.Getenv("CREDHUB_CA_CERT"))
