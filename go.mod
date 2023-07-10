@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	code.cloudfoundry.org/credhub-cli v0.0.0-20200227190202-0fffecb4557e
+	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/gorilla/mux v1.7.3
 	github.com/qntfy/kazaam v3.4.8+incompatible
 )
@@ -11,7 +12,6 @@ require (
 require (
 	github.com/cloudfoundry/go-socks5 v0.0.0-20180221174514-54f73bdb8a8e // indirect
 	github.com/cloudfoundry/socks5-proxy v0.2.0 // indirect
-	github.com/gofrs/uuid v3.2.0+incompatible // indirect
 	github.com/hashicorp/go-version v1.2.0 // indirect
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect

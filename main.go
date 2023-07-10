@@ -50,6 +50,7 @@ func main() {
 	subrouter.HandleFunc("/sys/seal-status", SealStatus).Methods("GET")
 	subrouter.HandleFunc("/sys/health", SealStatus).Methods("GET")
 	subrouter.HandleFunc("/sys/leader", Leader).Methods("GET")
+	subrouter.HandleFunc("/auth/token/lookup-self", CheckToken).Methods("GET")
 	subrouter.HandleFunc("/auth/approle/login", AppRoleLogin).Methods("POST")
 	subrouter.HandleFunc("/secret/handshake", SecretHandshake).Methods("GET")
 	subrouter.HandleFunc("/{path:.*}", ListSecret).Methods("LIST")
@@ -134,6 +135,84 @@ func Mounts(w http.ResponseWriter, r *http.Request) {
 func SealStatus(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"sealed":false}`))
 	log.Print("seal status")
+}
+
+func CheckToken(w http.ResponseWriter, r *http.Request) {	
+	token := r.Header.Get("X-Vault-Token")
+	uuid, _ := uuid.NewGen().NewV1()
+	_, err := getCredhubClient(token)
+	if err != nil {
+		log.Printf("token invalid: %s\n", err.Error())
+		http.Error(w, fmt.Sprintf(`{"errors":["permission denied: %s"]}`, err.Error()), http.StatusForbidden)
+		return
+	}
+	
+	type Data struct {
+		Accessor       string    `json:"accessor"`
+		CreationTime   int       `json:"creation_time"`
+		CreationTTL    int       `json:"creation_ttl"`
+		DisplayName    string    `json:"display_name"`
+		EntityId       string    `json:"entity_id"`
+		ExpireTime     *struct{} `json:"expire_time"`
+		ExplicitMaxTTL int       `json:"explicit_max_ttl"`
+		ID             string    `json:"id"`
+		Meta           *struct{} `json:"meta"`
+		NumUses        int       `json:"num_uses"`
+		Orphan         bool      `json:"orphan"`
+		Path           string    `json:"path"`
+		Policies       []string  `json:"policies"`
+		TTL            int       `json:"ttl"`
+		Type           string    `json:"type"`
+	}
+
+	type Request struct {
+		RequestId     string    `json:"request_id"`
+		LeaseId       string    `json:"lease_id"`
+		Renewable     bool      `json:"renewable"`
+		LeaseDuration int       `json:"lease_duration"`
+		Data          Data      `json:"data"`
+		WrapInfo      *struct{} `json:"wrap_info"`
+		Warnings      *struct{} `json:"warnings"`
+		Auth          *struct{} `json:"auth"`
+	}
+	
+	req := Request{
+		RequestId:     uuid.String(),
+		LeaseId:       "",
+		Renewable:     false,
+		LeaseDuration: 0,
+		Data: Data{
+			Accessor:       "",
+			CreationTime:   1676509870,
+			CreationTTL:    0,
+			DisplayName:    "root",
+			EntityId:       "",
+			ExpireTime:     nil,
+			ExplicitMaxTTL: 0,
+			ID:             token,
+			Meta:           nil,
+			NumUses:        0,
+			Orphan:         true,
+			Path:           "auth/token/root",
+			Policies:       []string{"root"},
+			TTL:            0,
+			Type:           "service",
+		},
+		WrapInfo:  nil,
+		Warnings:  nil,
+		Auth:      nil,
+	}
+
+	reqJSONB, err := json.Marshal(req)
+	if err != nil {
+		fmt.Printf("Error marshalling struct to JSON: %v\n", err)
+		return
+	}
+	fmt.Println(string(reqJSONB))
+
+	w.Write(reqJSONB)
+
+	log.Printf("token lookup-self")
 }
 
 func Leader(w http.ResponseWriter, r *http.Request) {
