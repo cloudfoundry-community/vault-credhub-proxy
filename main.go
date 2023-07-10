@@ -14,9 +14,12 @@ import (
 	"code.cloudfoundry.org/credhub-cli/credhub"
 	"code.cloudfoundry.org/credhub-cli/credhub/auth"
 	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
+	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
 	"github.com/qntfy/kazaam"
 )
+
+var Version string
 
 type fakeMount struct {
 	Type        string   `json:"type"`
@@ -26,6 +29,19 @@ type fakeMount struct {
 }
 
 func main() {
+
+	if (len(os.Args[1:]) >= 1) {
+		if (os.Args[1] == "-v" || os.Args[1] == "--version") {
+			if Version != "" {
+				fmt.Fprintf(os.Stderr, "vault-credhub-proxy v%s\n", Version)
+			} else {
+				fmt.Fprintf(os.Stderr, "vault-credhub-proxy (development build)\n")
+			}
+			os.Exit(0)
+			return
+		}
+	}
+
 	router := mux.NewRouter()
 	router.Use(requestLogger)
 	subrouter := router.PathPrefix("/v1").Subrouter()

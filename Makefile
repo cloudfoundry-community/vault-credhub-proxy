@@ -16,7 +16,7 @@ vet:
 
 build: vet
 	go build $(GO_LDFLAGS) -o $(APP_PATH)
-	#$(APP_PATH) -v
+	$(APP_PATH) -v
 
 test:
 	go test -v ./...
